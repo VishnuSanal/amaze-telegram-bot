@@ -69,12 +69,13 @@ def parse_pr(pr_number):
               "{}\nCreated by: {}".format(pr_number, data["title"], data["state"], created_date, data["user"]["login"])
     if data["assignee"] is not None:
         details += "\nAssigned to: {}".format(data["assignee"]["login"])
-    fixes_issue = re.findall("Fixes #\d{4}", data["body"])
-    if len(fixes_issue) != 0:
-        details += "\nFixes issue(s): "
-        for issue_raw in fixes_issue:
-            issue = issue_raw[-4:]
-            details += "[" + issue + "](" + GITHUB_AMAZE_ISSUES_URI.format(issue) + ")"
+    if data["body"]:
+        fixes_issue = re.findall("Fixes #\d{4}", data["body"])
+        if len(fixes_issue) != 0:
+            details += "\nFixes issue(s): "
+            for issue_raw in fixes_issue:
+                issue = issue_raw[-4:]
+                details += "[" + issue + "](" + GITHUB_AMAZE_ISSUES_URI.format(issue) + ")"
     if data["closed_at"] is not None:
         closed_date = datetime.datetime.strptime(data['closed_at'], '%Y-%m-%dT%H:%M:%SZ').date()
         details += "\nClosed at: {}".format(closed_date)
@@ -173,6 +174,8 @@ def create_issue(uri, token, issue_message, reporter):
     print("Get response body from create_issue {}".format(response_json))
     if not response.ok or response_json is None or "message" in response_json:
         raise Exception("Failed to create issue")
+    elif "isUnofficial" in response_json and response_json["isUnofficial"]:
+        raise ValueError()
     else:
         result = "[{}]({})".format(response_json["number"], response_json["html_url"])
         print("Return createissue response {}".format(result))
@@ -181,5 +184,5 @@ def create_issue(uri, token, issue_message, reporter):
 
 def create_issue_body(issue_message, reporter):
     title = "Crash reported by {}".format(reporter)
-    issue_message += "\t\tReporter: {}".format(reporter)
+    issue_message += "\n\nReporter: {}".format(reporter)
     return {"title": title, "body": issue_message}

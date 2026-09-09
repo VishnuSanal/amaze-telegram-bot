@@ -1,0 +1,25 @@
+# Function dependencies, for example:
+# package>=version
+certifi==2021.10.8
+charset-normalizer==2.0.10
+click==8.1.2
+Flask==2.1.1
+Flask-SQLAlchemy==2.5.1
+greenlet==1.1.2
+idna==3.3
+importlib-metadata==4.8.1
+itsdangerous==2.1.2
+Jinja2==3.1.1
+jsonpickle==2.0.0
+MarkupSafe==2.1.1
+psycopg2==2.9.3
+psycopg2-binary==2.9.3
+requests==2.27.1
+SQLAlchemy==1.4.34
+sqlparse==0.4.2
+tabulate==0.8.9
+typing-extensions==3.10.0.2
+urllib3==1.26.8
+Werkzeug==2.1.1
+yoyo-migrations==7.3.2
+zipp==3.6.0

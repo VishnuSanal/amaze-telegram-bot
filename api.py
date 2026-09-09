@@ -4,11 +4,11 @@ import os
 import json
 import requests
 import git
+from modals import Exclusions, db
 from flask import request, Response
+from flask import current_app
 
-app = flask.Flask(__name__)
-app.config["DEBUG"] = True
-function_switch = "ON"
+function_switch = os.environ.get("FUNCTION_SWITCH")
 telegram_system_token = os.environ.get('TELEGRAM_TOKEN')
 request_session = os.environ.get("REQUEST_SESSION")
 restricted_commands = os.environ.get("RESTRICTED_COMMANDS")
@@ -23,9 +23,27 @@ base_url_telegram = "https://api.telegram.org/bot{}".format(telegram_system_toke
 base_url_codacy_stats = "https://app.codacy.com/api/v3/analysis/organizations/gh/{}/repositories/{}/commit-statistics".format(owner, repo)
 send_message_url = base_url_telegram + "/sendMessage"
 
+dbUser = os.environ.get('DB_USER')
+dbPwd = os.environ.get('DB_PWD')
+dbName = os.environ.get('DB_NAME')
 
-@app.route('/runCommand', methods=['POST'])
-def api():
+# below azure postgres
+dbAzurePort = os.environ.get('DB_AZURE_PORT')
+dbAzureHost = os.environ.get('DB_AZURE_HOST')
+
+# below gcloud sql config
+db_socket_dir = os.environ.get("DB_SOCKET_DIR", "/cloudsql")
+instance_connection_name = os.environ.get('DB_CONNECTION_NAME')
+
+# app = flask.Flask(__name__)
+app = current_app
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@/{}?host={}/{}'.format(dbUser, dbPwd, dbName, db_socket_dir, instance_connection_name)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@{}:{}/{}'.format(dbUser, dbPwd, dbAzureHost, dbAzurePort, dbName)
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db.init_app(app)
+
+def api(request):
     data = request.get_json()
     request_token = request.args.get('token')
     message = data.get('message')
@@ -53,7 +71,7 @@ def process_command(inputs, message):
             print("Current request json {}".format(message))
             command_raw = message.get("text")
             bot_index_identifier = command_raw.find('@')
-            if bot_index_identifier != -1:
+            if bot_index_identifier != -1 and "exclusion" not in command_raw:
                 if command_raw[bot_index_identifier+1:] != telegram_bot_name:
                     print("Not a command for Amaze bot, input command {}".format(command_raw[bot_index_identifier+1:]))
                     raise ValueError()
@@ -65,6 +83,24 @@ def process_command(inputs, message):
                     print("User not permitted for the command {}".format(command_raw))
                     return inputs["commandNotPermitted"]
                 result_command = inputs[command_raw]
+                print("Found resultCommand {}".format(result_command))
+                command_keyword = re.findall("##.+##", result_command)
+                if len(command_keyword) != 0:
+                    print("Processing regex {} for result command {}".format(command_keyword[0], result_command))
+                    try:
+                        return result_command.replace(command_keyword[0], "\n" +
+                                                      format_command(inputs, message, command_keyword[0]))
+                    except Exception as err:
+                        return str(err)
+                else:
+                    return result_command
+            elif inputs and command_raw.split()[0] in inputs:
+                command_splits = command_raw.split()
+                # authenticate command permission for exclusions
+                if not is_command_permitted(command_splits[0], message):
+                    print("User not permitted for the command {}".format(command_splits[0]))
+                    return inputs["commandNotPermitted"]
+                result_command = inputs[command_splits[0]]
                 print("Found resultCommand {}".format(result_command))
                 command_keyword = re.findall("##.+##", result_command)
                 if len(command_keyword) != 0:
@@ -127,7 +163,7 @@ def format_command(inputs, message, command_keyword):
     if command_keyword == "help":
         result = ""
         for x in inputs.keys():
-            if not x.startswith("/"):
+            if not x.startswith("/") or "exclusion" in x:
                 continue
             result += "{}\n".format(x)
         print("Found help keyword response {}".format(result))
@@ -154,17 +190,37 @@ def format_command(inputs, message, command_keyword):
         number_loc = data[0].get("numberLoc")
         print("Found number of loc for repo {} to be {}".format(repo, str(number_loc)))
         return str(number_loc)
+    elif command_keyword == "exclusion":
+        message_split = message.get("text").split()
+        return insertDevice(message_split[1], message_split[2], getUsernameFromMessage(message))
     else:
         return "_Command Not Found_"
 
 
 def is_command_permitted(command, message):
     if command in restricted_commands.split(','):
-        message_from = message.get("from")
-        user_name = message_from.get("username")
-        return user_name in users_admins.split(',')
+        user_name = getUsernameFromMessage(message)
+        print("Restriced command check {} for user {}", command, user_name)
+        return user_name is not None and user_name in users_admins.split(',')
     else:
         return True
+    
+
+def getUsernameFromMessage(message):
+    message_from = message.get("from")
+    return message_from.get("username")
+
+
+def insertDevice(device_id, summary, initiator):
+    try:
+        exclusiveRenew = Exclusions(device_id, summary, True)
+        print("manually initiated exclusive access by {} for {} summary {}".format(initiator, device_id, summary))
+        db.session.add(exclusiveRenew)
+        db.session.commit()
+        return "success"
+    except Exception as e:
+        print("Failed to add exclusive access for {}", device_id, e)
+        return "failed"
 
 
 def send_message(command_result, data):
@@ -189,6 +245,3 @@ def build_post_message_request(command_result, data):
 def load_input_dictionary():
     input_file_stream = open(r"inputs.json")
     return json.loads(input_file_stream.read())
-
-
-app.run()

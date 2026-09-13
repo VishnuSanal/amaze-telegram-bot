@@ -70,7 +70,7 @@ def parse_pr(pr_number):
     if data["assignee"] is not None:
         details += "\nAssigned to: {}".format(data["assignee"]["login"])
     if data["body"]:
-        fixes_issue = re.findall("Fixes #\d{4}", data["body"])
+        fixes_issue = re.findall(r"Fixes #\d{4}", data["body"])
         if len(fixes_issue) != 0:
             details += "\nFixes issue(s): "
             for issue_raw in fixes_issue:

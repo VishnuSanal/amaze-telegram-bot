@@ -35,14 +35,18 @@ dbAzureHost = os.environ.get('DB_AZURE_HOST')
 db_socket_dir = os.environ.get("DB_SOCKET_DIR", "/cloudsql")
 instance_connection_name = os.environ.get('DB_CONNECTION_NAME')
 
-# app = flask.Flask(__name__)
-app = current_app
+# app = current_app
+
+app = flask.Flask(__name__)
+# app.config["DEBUG"] = True
+
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@/{}?host={}/{}'.format(dbUser, dbPwd, dbName, db_socket_dir, instance_connection_name)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://{}:{}@{}:{}/{}'.format(dbUser, dbPwd, dbAzureHost, dbAzurePort, dbName)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db.init_app(app)
 
+# @app.route('/runCommand', methods=['POST'])
 def api(request):
     data = request.get_json()
     request_token = request.args.get('token')
@@ -122,7 +126,7 @@ def process_command(inputs, message):
                 print("Service down for maintenance")
                 raise ValueError("Unable to handle operation")
 
-            issue_number = re.findall("#\d{4}", message.get("text"))
+            issue_number = re.findall(r"#\d{4}", message.get("text"))
             if len(issue_number) != 0:
                 print("Extracted issue number from current request json {}, {}".format(issue_number, message))
                 print("Found request for issue number {}".format(issue_number[0]))
@@ -245,3 +249,5 @@ def build_post_message_request(command_result, data):
 def load_input_dictionary():
     input_file_stream = open(r"inputs.json")
     return json.loads(input_file_stream.read())
+
+# app.run()

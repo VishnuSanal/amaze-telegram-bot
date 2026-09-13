@@ -118,8 +118,7 @@ def process_command(inputs, message):
                     return result_command
             else:
                 print("Didn't find resultCommand for {}".format(command_raw))
-                message["text"] = "/help"
-                return inputs["default"], process_command(inputs, message)
+                return inputs["default"]
         else:
             # SERVICE MAINTENANCE CHECK
             if function_switch == "OFF":

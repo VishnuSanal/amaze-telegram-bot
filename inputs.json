@@ -2,7 +2,7 @@
 	"member": "Welcome [{}](tg://user?id={})! Feel free to use our bot for more details, or talk directly to the maintainers :)",
 	"requestSessionOpen": "Feature request session is _open_.\nPlease write your feature request here. If you already have a GitHub issue number, mention it here and we'll consider it.",
 	"requestSessionClosed": "Feature request session is _closed_.\nPlease wait for next development cycle to start",
-	"default": "Sorry didn't get that, please use one of the following commands",
+	"default": "Sorry didn't get that, please use a valid command",
 	"serviceDown": "Sorry, we're currently under maintenance",
 	"commandNotPermitted": "Sorry, you're not allowed to perform this operation.",
 	"quote_message": "Please quote a message for this operation",

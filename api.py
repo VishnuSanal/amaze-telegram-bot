@@ -159,7 +159,10 @@ def process_command(inputs, message):
             raise ValueError("Unable to handle operation")
         print("Current request json {}".format(message))
         print("New member added to group: {}".format(message.get("new_chat_member")))
-        return inputs["member"].format(message.get("new_chat_member").get("first_name")), inputs["member2"]
+        user_id = message.get("new_chat_member").get("id")
+        first_name = message.get("new_chat_member").get("first_name", "there")
+
+        return inputs["member"].format(first_name, user_id)
 
 
 def format_command(inputs, message, command_keyword):

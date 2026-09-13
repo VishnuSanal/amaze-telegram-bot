@@ -1,6 +1,5 @@
 {
-	"member": "Welcome {} to Amaze telegram channel.\nPlease use _/help_ command to get all possible list of operations, or start typing ```/```\n\nYou can also use me to get basic info of any GitHub issue / PR. Just include issue / PR number in format #1234)",
-	"member2": "Feel free to ask your questions directly to one of our team members\n@vishal\\_nehra\n@TranceLove",
+	"member": "Welcome [{}](tg://user?id={})! Feel free to use our bot for more details, or talk directly to the maintainers :)",
 	"requestSessionOpen": "Feature request session is _open_.\nPlease write your feature request here. If you already have a GitHub issue number, mention it here and we'll consider it.",
 	"requestSessionClosed": "Feature request session is _closed_.\nPlease wait for next development cycle to start",
 	"default": "Sorry didn't get that, please use one of the following commands",

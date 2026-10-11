@@ -5,8 +5,7 @@ import json
 import requests
 import git
 from modals import Exclusions, db
-from flask import request, Response
-from flask import current_app
+from flask import Response
 
 function_switch = os.environ.get("FUNCTION_SWITCH")
 telegram_system_token = os.environ.get('TELEGRAM_TOKEN')
@@ -34,8 +33,6 @@ dbAzureHost = os.environ.get('DB_AZURE_HOST')
 # below gcloud sql config
 db_socket_dir = os.environ.get("DB_SOCKET_DIR", "/cloudsql")
 instance_connection_name = os.environ.get('DB_CONNECTION_NAME')
-
-# app = current_app
 
 app = flask.Flask(__name__)
 # app.config["DEBUG"] = True
@@ -218,15 +215,17 @@ def getUsernameFromMessage(message):
 
 
 def insertDevice(device_id, summary, initiator):
-    try:
-        exclusiveRenew = Exclusions(device_id, summary, True)
-        print("manually initiated exclusive access by {} for {} summary {}".format(initiator, device_id, summary))
-        db.session.add(exclusiveRenew)
-        db.session.commit()
-        return "success"
-    except Exception as e:
-        print("Failed to add exclusive access for {}", device_id, e)
-        return "failed"
+    with app.app_context():
+        try:
+            exclusiveRenew = Exclusions(device_id, summary, True)
+            print("manually initiated exclusive access by {} for {} summary {}".format(initiator, device_id, summary))
+            db.session.add(exclusiveRenew)
+            db.session.commit()
+            return "success"
+        except Exception as e:
+            db.session.rollback()  # rollback for failed transactions
+            print("Failed to add exclusive access for {}: {}".format(device_id, e))
+            return "failed"
 
 
 def send_message(command_result, data):
